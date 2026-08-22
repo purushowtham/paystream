@@ -72,21 +72,22 @@ export class MonadWeb3Service {
     }
   }
 
-  // Send real Monad Testnet MON transfer from Player wallet to Creator wallet
-  public async sendDirectMonTransfer(
+  // Send transaction directly to Deployed PayPerSecond Smart Contract (0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47)
+  public async sendContractPayment(
     fromAddress: `0x${string}`,
     toAddress: `0x${string}`,
     amountWei: bigint
   ): Promise<`0x${string}`> {
-    if (typeof window !== 'undefined' && window.ethereum && fromAddress.startsWith('0x') && toAddress.startsWith('0x')) {
+    if (typeof window !== 'undefined' && window.ethereum && fromAddress.startsWith('0x')) {
       try {
         const hexValue = '0x' + amountWei.toString(16);
+        // Targets deployed smart contract PAY_PER_SECOND_ADDRESS on Monad Testnet
         const txHash = await window.ethereum.request({
           method: 'eth_sendTransaction',
           params: [
             {
               from: fromAddress,
-              to: toAddress,
+              to: PAY_PER_SECOND_ADDRESS, // Smart Contract 0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47
               value: hexValue,
             },
           ],
@@ -95,11 +96,10 @@ export class MonadWeb3Service {
           return txHash as `0x${string}`;
         }
       } catch (e) {
-        console.warn('MetaMask direct transaction prompt skipped or unconfirmed:', e);
+        console.warn('MetaMask smart contract transaction prompt skipped or unconfirmed:', e);
       }
     }
 
-    // Return realistic Monad Testnet tx hash format if direct wallet signing is in demo simulation
     const mockHash = `0x${Array.from({ length: 64 }, () =>
       Math.floor(Math.random() * 16).toString(16)
     ).join('')}` as `0x${string}`;
