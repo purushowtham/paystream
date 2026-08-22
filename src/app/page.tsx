@@ -47,13 +47,17 @@ export default function Home() {
   const [logs, setLogs] = useState<TransactionLog[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Load persistent videos on mount
-  useEffect(() => {
-    const loaded = videoStorageService.loadVideos();
+  // Load & poll real-time global video catalog across devices
+  const refreshGlobalVideos = async () => {
+    const loaded = await videoStorageService.loadVideosAsync();
     setVideoList(loaded);
-    if (loaded.length > 0) {
-      handleSelectVideo(loaded[0]);
-    }
+  };
+
+  useEffect(() => {
+    refreshGlobalVideos();
+    // Poll for new creator uploads every 4 seconds
+    const interval = setInterval(refreshGlobalVideos, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   // Initialize payment session & fetch balances whenever role/wallet updates
@@ -149,10 +153,9 @@ export default function Home() {
 
   const handleAddVideo = async (newVideo: Video, videoBlob?: Blob) => {
     const saved = await videoStorageService.saveVideo(newVideo, videoBlob);
-    const updatedList = videoStorageService.loadVideos();
-    setVideoList(updatedList);
+    await refreshGlobalVideos();
     await handleSelectVideo(saved);
-    showNotification('Video published to PayStream catalog!');
+    showNotification('Video published globally to PayStream catalog!');
     confetti({ particleCount: 80, spread: 90, origin: { y: 0.6 } });
   };
 

@@ -45,7 +45,7 @@ export class VideoStorageService {
     return this.dbPromise;
   }
 
-  // Save video metadata to localStorage & video file blob to IndexedDB
+  // Save video metadata globally via Vercel API & localStorage
   public async saveVideo(video: Video, videoBlob?: Blob): Promise<Video> {
     if (videoBlob) {
       try {
@@ -62,18 +62,28 @@ export class VideoStorageService {
       }
     }
 
-    // Update metadata list
-    const existing = this.loadVideos();
+    // 1. Sync to local storage
+    const existing = this.getLocalVideos();
     const updated = [video, ...existing.filter((v) => v.id !== video.id)];
     if (typeof window !== 'undefined') {
       localStorage.setItem(METADATA_KEY, JSON.stringify(updated));
     }
 
+    // 2. Sync to global Vercel API endpoint for cross-device visibility
+    try {
+      await fetch('/api/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(video),
+      });
+    } catch (e) {
+      console.warn('Cloud video sync failed', e);
+    }
+
     return video;
   }
 
-  // Load all videos (merging stored uploaded videos + demo videos)
-  public loadVideos(): Video[] {
+  public getLocalVideos(): Video[] {
     if (typeof window === 'undefined') return DEMO_VIDEOS;
 
     try {
@@ -88,9 +98,38 @@ export class VideoStorageService {
       console.warn('Failed to parse stored videos metadata');
     }
 
-    // Save default demo videos to storage
-    localStorage.setItem(METADATA_KEY, JSON.stringify(DEMO_VIDEOS));
     return DEMO_VIDEOS;
+  }
+
+  // Load all videos (fetching real-time global API + fallback to local)
+  public async loadVideosAsync(): Promise<Video[]> {
+    const local = this.getLocalVideos();
+
+    try {
+      const response = await fetch('/api/videos');
+      if (response.ok) {
+        const remoteVideos: Video[] = await response.json();
+        if (remoteVideos && Array.isArray(remoteVideos) && remoteVideos.length > 0) {
+          // Merge remote & local without duplicates
+          const videoMap = new Map<number, Video>();
+          remoteVideos.forEach((v) => videoMap.set(v.id, v));
+          local.forEach((v) => videoMap.set(v.id, v));
+          const merged = Array.from(videoMap.values());
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(METADATA_KEY, JSON.stringify(merged));
+          }
+          return merged;
+        }
+      }
+    } catch (e) {
+      console.warn('Using local video cache');
+    }
+
+    return local;
+  }
+
+  public loadVideos(): Video[] {
+    return this.getLocalVideos();
   }
 
   // Get video playable Blob URL (restores from IndexedDB if stored locally)
