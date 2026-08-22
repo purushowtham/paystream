@@ -1,5 +1,6 @@
 import { parseEther, formatEther } from 'viem';
 import { TransactionLog, Video, WatchSessionState } from './types';
+import { monadWeb3Service } from './web3-provider';
 
 export class PaymentEngine {
   private videoElement: HTMLVideoElement | null = null;
@@ -55,7 +56,7 @@ export class PaymentEngine {
     this.onStateChangeCallback = onStateChange;
     this.onBalanceExhaustedCallback = onBalanceExhausted;
 
-    // Generate pseudo session ID for current session
+    // Generate session ID for current session
     const randomHex = Array.from({ length: 32 }, () =>
       Math.floor(Math.random() * 16).toString(16)
     ).join('');
@@ -132,41 +133,35 @@ export class PaymentEngine {
     this.isProcessingTx = true;
 
     const txId = Math.random().toString(36).substring(2, 9);
-    // Generate realistic Monad tx hash format
-    const mockHash = `0x${Array.from({ length: 64 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('')}` as `0x${string}`;
+    const creatorAddress = (this.currentVideo?.creatorAddress as `0x${string}`) || '0x2222222222222222222222222222222222222222';
+    const playerAddress = this.walletAddress || '0x1111111111111111111111111111111111111111';
+
+    // Broadcast live transaction via Web3 Service (MetaMask -> Monad Testnet RPC)
+    const txHash = await monadWeb3Service.sendDirectMonTransfer(
+      playerAddress,
+      creatorAddress,
+      this.pricePerSecondWei
+    );
 
     const newLog: TransactionLog = {
       id: txId,
       sessionId: this.sessionId || '0x0',
       secondNumber: secondNumber,
       amountEth: formatEther(this.pricePerSecondWei),
-      txHash: mockHash,
+      txHash: txHash,
       timestamp: new Date(),
-      status: 'pending',
+      status: 'confirmed',
     };
 
     this.txLogs.unshift(newLog);
+
+    // Deduct from player vault & update totals
+    this.vaultBalanceWei -= this.pricePerSecondWei;
+    this.totalSpentWei += this.pricePerSecondWei;
+    this.secondsPaid += 1;
+
+    this.isProcessingTx = false;
     this.notifyStateChange();
-
-    // Simulate ultra-fast Monad block execution (400ms)
-    setTimeout(() => {
-      // Deduct from vault balance & update totals
-      this.vaultBalanceWei -= this.pricePerSecondWei;
-      this.totalSpentWei += this.pricePerSecondWei;
-      this.secondsPaid += 1;
-
-      // Update log to confirmed
-      const logIdx = this.txLogs.findIndex((l) => l.id === txId);
-      if (logIdx !== -1) {
-        this.txLogs[logIdx].status = 'confirmed';
-        this.txLogs[logIdx].blockNumber = 1043200 + this.secondsPaid;
-      }
-
-      this.isProcessingTx = false;
-      this.notifyStateChange();
-    }, 350);
   }
 
   public stopSession() {
