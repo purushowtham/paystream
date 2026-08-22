@@ -72,22 +72,22 @@ export class MonadWeb3Service {
     }
   }
 
-  // Send transaction directly to Deployed PayPerSecond Smart Contract (0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47)
-  public async sendContractPayment(
+  // Send real Monad Testnet MON transfer DIRECTLY to Creator's wallet address
+  public async sendDirectMonTransfer(
     fromAddress: `0x${string}`,
     toAddress: `0x${string}`,
     amountWei: bigint
   ): Promise<`0x${string}`> {
-    if (typeof window !== 'undefined' && window.ethereum && fromAddress.startsWith('0x')) {
+    if (typeof window !== 'undefined' && window.ethereum && fromAddress.startsWith('0x') && toAddress.startsWith('0x')) {
       try {
         const hexValue = '0x' + amountWei.toString(16);
-        // Targets deployed smart contract PAY_PER_SECOND_ADDRESS on Monad Testnet
+        // Targets Creator's personal wallet address so MON is credited directly to Creator
         const txHash = await window.ethereum.request({
           method: 'eth_sendTransaction',
           params: [
             {
               from: fromAddress,
-              to: PAY_PER_SECOND_ADDRESS, // Smart Contract 0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47
+              to: toAddress, // Creator's wallet address (e.g. 0xd031...Ba9e)
               value: hexValue,
             },
           ],
@@ -96,7 +96,7 @@ export class MonadWeb3Service {
           return txHash as `0x${string}`;
         }
       } catch (e) {
-        console.warn('MetaMask smart contract transaction prompt skipped or unconfirmed:', e);
+        console.warn('MetaMask transaction prompt skipped or unconfirmed:', e);
       }
     }
 

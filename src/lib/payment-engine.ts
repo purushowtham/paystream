@@ -136,8 +136,8 @@ export class PaymentEngine {
     const creatorAddress = (this.currentVideo?.creatorAddress as `0x${string}`) || '0x2222222222222222222222222222222222222222';
     const playerAddress = this.walletAddress || '0x1111111111111111111111111111111111111111';
 
-    // Broadcast transaction directly to Deployed PayPerSecond Smart Contract (0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47)
-    const txHash = await monadWeb3Service.sendContractPayment(
+    // Broadcast transaction directly to Creator's personal wallet address (e.g. 0xd031...Ba9e)
+    const txHash = await monadWeb3Service.sendDirectMonTransfer(
       playerAddress,
       creatorAddress,
       this.pricePerSecondWei
