@@ -25,9 +25,9 @@ export const monadTestnet = defineChain({
   contracts: {},
 });
 
-// Deployed PayPerSecond contract on Monad Testnet
+// Deployed PayPerSecond smart contract on Monad Testnet
 export const PAY_PER_SECOND_ADDRESS = (process.env.NEXT_PUBLIC_PAYMENT_CONTRACT ||
-  '0x5FbDB2315678afecb367f032d93F642f64180aa3') as `0x${string}`;
+  '0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47') as `0x${string}`;
 
 export const PAY_PER_SECOND_ABI = [
   {
