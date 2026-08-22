@@ -8,6 +8,7 @@ interface HeaderProps {
   authenticatedRole: 'viewer' | 'creator';
   authenticatedWallet: `0x${string}`;
   viewerVaultBalanceWei: bigint;
+  creatorWalletBalanceWei: bigint;
   creatorTotalEarningsWei: bigint;
   onOpenDepositModal: () => void;
   onLogout: () => void;
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   authenticatedRole,
   authenticatedWallet,
   viewerVaultBalanceWei,
+  creatorWalletBalanceWei,
   creatorTotalEarningsWei,
   onOpenDepositModal,
   onLogout,
@@ -41,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Active Locked Role Display (Not clickable/changeable) */}
+          {/* Active Locked Role Display */}
           <div className="hidden sm:flex items-center gap-2 p-1.5 bg-white border-4 border-black shadow-[3px_3px_0_#000000]">
             <span
               className={`flex items-center gap-1.5 px-3 py-1.5 font-pixel text-xs uppercase font-bold ${
@@ -65,11 +67,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Authenticated Wallet Chip ONLY (No opposite role wallet displayed!) */}
+        {/* Right: Authenticated Wallet Chip ONLY */}
         <div className="flex items-center gap-3">
           
           {authenticatedRole === 'viewer' ? (
-            /* VIEWER LOCKED WALLET BADGE ONLY */
+            /* VIEWER LOCKED WALLET BADGE */
             <div className="flex items-center gap-2 bg-amber-100 border-4 border-black p-1.5 pl-3 shadow-[4px_4px_0_#000000] text-black">
               <div className="flex flex-col">
                 <span className="text-[9px] font-pixel text-pink-700 uppercase">PLAYER WALLET (LOCKED)</span>
@@ -78,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {authenticatedWallet.substring(0, 6)}...{authenticatedWallet.substring(authenticatedWallet.length - 4)}
                   </span>
                   <span className="font-pixel text-[10px] text-emerald-700 font-bold">
-                    {parseFloat(formatEther(viewerVaultBalanceWei)).toFixed(2)} MON
+                    VAULT: {parseFloat(formatEther(viewerVaultBalanceWei)).toFixed(2)} MON
                   </span>
                 </div>
               </div>
@@ -92,16 +94,19 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
           ) : (
-            /* CREATOR LOCKED WALLET BADGE ONLY */
+            /* CREATOR LOCKED WALLET BADGE WITH REAL MONAD BALANCE */
             <div className="flex items-center gap-2 bg-pink-200 border-4 border-black p-1.5 pl-3 shadow-[4px_4px_0_#000000] text-black">
               <div className="flex flex-col">
-                <span className="text-[9px] font-pixel text-pink-700 uppercase">CREATOR WALLET (LOCKED)</span>
-                <div className="flex items-center gap-1.5 font-arcade text-base font-bold text-black">
+                <span className="text-[9px] font-pixel text-pink-700 uppercase">CREATOR PAYOUT WALLET (LOCKED)</span>
+                <div className="flex items-center gap-2 font-arcade text-base font-bold text-black">
                   <span className="font-mono text-black font-bold">
                     {authenticatedWallet.substring(0, 6)}...{authenticatedWallet.substring(authenticatedWallet.length - 4)}
                   </span>
-                  <span className="font-pixel text-[10px] text-emerald-700 font-bold">
-                    {parseFloat(formatEther(creatorTotalEarningsWei)).toFixed(3)} MON
+                  <span className="font-pixel text-[10px] text-emerald-800 font-bold bg-white px-2 py-0.5 border border-black">
+                    BAL: {parseFloat(formatEther(creatorWalletBalanceWei)).toFixed(4)} MON
+                  </span>
+                  <span className="font-pixel text-[10px] text-purple-900 font-bold">
+                    EARNED: {parseFloat(formatEther(creatorTotalEarningsWei)).toFixed(3)} MON
                   </span>
                 </div>
               </div>

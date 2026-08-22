@@ -33,8 +33,9 @@ export default function Home() {
   const [viewerWallet, setViewerWallet] = useState<`0x${string}`>('0x1111111111111111111111111111111111111111');
   const [creatorWallet, setCreatorWallet] = useState<`0x${string}`>('0x2222222222222222222222222222222222222222');
   
-  // Vault & Earnings Balances
+  // Vault & Real Wallet Balances
   const [viewerVaultBalanceWei, setViewerVaultBalanceWei] = useState<bigint>(parseEther('5.0'));
+  const [creatorWalletBalanceWei, setCreatorWalletBalanceWei] = useState<bigint>(parseEther('10.0'));
   const [creatorTotalEarningsWei, setCreatorTotalEarningsWei] = useState<bigint>(parseEther('0.0'));
 
   // Session & Logs state
@@ -55,19 +56,25 @@ export default function Home() {
     }
   }, []);
 
-  // Initialize payment session whenever video or viewer wallet changes
+  // Initialize payment session & fetch balances whenever role/wallet updates
   useEffect(() => {
     if (authSession) {
-      startNewSession(currentVideo, viewerWallet, viewerVaultBalanceWei);
-      fetchRealMonadBalance(viewerWallet);
+      if (authSession.role === 'viewer') {
+        startNewSession(currentVideo, viewerWallet, viewerVaultBalanceWei);
+        fetchRealMonadBalance(viewerWallet, 'viewer');
+      } else {
+        fetchRealMonadBalance(creatorWallet, 'creator');
+      }
     }
-  }, [currentVideo, viewerWallet, authSession]);
+  }, [currentVideo, viewerWallet, creatorWallet, authSession]);
 
   const handleAuthenticate = (role: 'viewer' | 'creator', walletAddress: `0x${string}`) => {
     if (role === 'viewer') {
       setViewerWallet(walletAddress);
+      fetchRealMonadBalance(walletAddress, 'viewer');
     } else {
       setCreatorWallet(walletAddress);
+      fetchRealMonadBalance(walletAddress, 'creator');
     }
     setAuthSession({ role, walletAddress });
     showNotification(`Authorized & locked as ${role.toUpperCase()} (${walletAddress.substring(0, 6)}...)`);
@@ -80,15 +87,19 @@ export default function Home() {
     setIsSessionActive(false);
   };
 
-  const fetchRealMonadBalance = async (address: `0x${string}`) => {
+  const fetchRealMonadBalance = async (address: `0x${string}`, role: 'viewer' | 'creator') => {
     try {
       const realBal = await monadWeb3Service.getBalance(address);
       if (realBal > 0n) {
-        setViewerVaultBalanceWei(realBal);
-        paymentEngineInstance.updateVaultBalance(realBal);
+        if (role === 'viewer') {
+          setViewerVaultBalanceWei(realBal);
+          paymentEngineInstance.updateVaultBalance(realBal);
+        } else {
+          setCreatorWalletBalanceWei(realBal);
+        }
       }
     } catch (e) {
-      console.log('Using default viewer vault balance for demo');
+      console.log('Using default wallet balance for demo');
     }
   };
 
@@ -165,6 +176,7 @@ export default function Home() {
         authenticatedRole={authSession.role}
         authenticatedWallet={authSession.walletAddress}
         viewerVaultBalanceWei={viewerVaultBalanceWei}
+        creatorWalletBalanceWei={creatorWalletBalanceWei}
         creatorTotalEarningsWei={creatorTotalEarningsWei}
         onOpenDepositModal={() => setIsDepositModalOpen(true)}
         onLogout={handleLogout}
